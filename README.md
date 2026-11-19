@@ -85,4 +85,4 @@ Open `index.html` in any web browser to view the clean autoplaying loop with no 
 
 ### 📝 Credits & Note
 Created and updated by [Charan](https://github.com/tirumaladasusricharan-alt).  
-Original concept inspired by [Shravani](https://github.com/shraaaa17/ascii-IRONMAN).
+
