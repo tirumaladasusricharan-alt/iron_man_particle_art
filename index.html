@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Iron Man - ASCII Halftone (Autoplay & Infinite Loop)</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #0a0012;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .video-container {
+      position: relative;
+      width: 100%;
+      max-width: 1100px;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 0 40px rgba(155, 20, 245, 0.4), 0 0 80px rgba(255, 235, 65, 0.2);
+    }
+    video {
+      display: block;
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      pointer-events: none; /* Prevents pause on click */
+    }
+    .sound-badge {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(10, 0, 18, 0.85);
+      border: 1px solid rgba(255, 235, 65, 0.5);
+      color: #ffeb41;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .sound-badge:hover {
+      background: rgba(155, 20, 245, 0.8);
+      color: #fff;
+      transform: scale(1.05);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="video-container">
+    <!-- AUTOPLAY, LOOP, NO CONTROLS (NO PAUSE BUTTON, INFINITE REPLAY) -->
+    <video id="ironmanVideo" autoplay loop muted playsinline>
+      <source src="output.mp4" type="video/mp4">
+    </video>
+    <div id="soundToggle" class="sound-badge" onclick="toggleSound()">
+      🔊 Click for Sound
+    </div>
+  </div>
+
+  <script>
+    const video = document.getElementById('ironmanVideo');
+    const badge = document.getElementById('soundToggle');
+
+    // Force continuous autoplay & looping
+    video.play().catch(() => {});
+
+    function toggleSound() {
+      if (video.muted) {
+        video.muted = false;
+        video.play();
+        badge.innerText = '🔊 Sound On';
+      } else {
+        video.muted = true;
+        badge.innerText = '🔇 Sound Off';
+      }
+    }
+  </script>
+
+</body>
+</html>
+

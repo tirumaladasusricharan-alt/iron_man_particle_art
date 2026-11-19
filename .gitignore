@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+temp_render.mp4
+.vscode/

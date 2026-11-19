@@ -1,15 +1,16 @@
-
 import cv2
 import numpy as np
 import mediapipe as mp
 import time
-import subprocess
+import os
+import winsound
 
 # ==========================================
 # SETTINGS
 # ==========================================
 
 INPUT_VIDEO = "video.mp4"
+AUDIO_FILE = "audio.wav"
 WINDOW_NAME = "Neon Halftone | Live Video"
 
 PROCESS_WIDTH = 640
@@ -30,34 +31,21 @@ BAYER_4X4 = np.array(
 )
 
 # ==========================================
-# AUDIO - PLAY ORIGINAL VIDEO AUDIO
+# AUDIO - LOOPING AUDIO
 # ==========================================
 
-audio_process = None
-
 def start_audio():
-    global audio_process
-
-    try:
-        audio_process = subprocess.Popen(
-            [
-                "ffplay",
-                "-nodisp",
-                "-autoexit",
-                "-loglevel", "quiet",
-                INPUT_VIDEO
-            ],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-    except FileNotFoundError:
-        print("FFplay not found. Install FFmpeg to enable audio.")
+    if os.path.exists(AUDIO_FILE):
+        try:
+            winsound.PlaySound(AUDIO_FILE, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_LOOP)
+        except Exception as e:
+            print(f"Audio playback error: {e}")
 
 def stop_audio():
-    global audio_process
-
-    if audio_process and audio_process.poll() is None:
-        audio_process.terminate()
+    try:
+        winsound.PlaySound(None, winsound.SND_PURGE)
+    except Exception:
+        pass
 
 
 # ==========================================
@@ -128,8 +116,7 @@ def main():
 
     print("Opening live animation window...")
     print("Press ESC to close.")
-    print("Press SPACE to pause/resume.")
-    print("Press R to restart the video.")
+    print("Playing and looping infinitely...")
 
     cv2.namedWindow(
         WINDOW_NAME,
@@ -143,7 +130,7 @@ def main():
         max(1, int(height * display_scale))
     )
 
-    paused = False
+    start_audio()
     last_frame_time = time.perf_counter()
 
     mp_selfie = mp.solutions.selfie_segmentation
@@ -153,57 +140,45 @@ def main():
     ) as segmenter:
 
         while True:
+            success, frame = cap.read()
 
-            if not paused:
-                success, frame = cap.read()
-
-                if not success:
-                    # Loop video automatically.
-                    cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-                    continue
-
-                if width > PROCESS_WIDTH:
-                    process_height = max(
-                        1, round(height * PROCESS_WIDTH / width)
-                    )
-                    process_frame = cv2.resize(
-                        frame,
-                        (PROCESS_WIDTH, process_height),
-                        interpolation=cv2.INTER_AREA
-                    )
-                else:
-                    process_frame = frame
-
-                mask = get_person_mask(segmenter, process_frame)
-                canvas = render_halftone(process_frame, mask)
-                if canvas.shape[:2] != (height, width):
-                    canvas = cv2.resize(
-                        canvas, (width, height),
-                        interpolation=cv2.INTER_NEAREST
-                    )
-
-                # Display live animation.
-                cv2.imshow(WINDOW_NAME, canvas)
-
-                elapsed = time.perf_counter() - last_frame_time
-                wait = max(1, int((delay - elapsed) * 1000))
-
+            if not success:
+                # Replay infinitely from start
+                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                start_audio()
                 last_frame_time = time.perf_counter()
+                continue
 
+            if width > PROCESS_WIDTH:
+                process_height = max(
+                    1, round(height * PROCESS_WIDTH / width)
+                )
+                process_frame = cv2.resize(
+                    frame,
+                    (PROCESS_WIDTH, process_height),
+                    interpolation=cv2.INTER_AREA
+                )
             else:
-                wait = 30
+                process_frame = frame
+
+            mask = get_person_mask(segmenter, process_frame)
+            canvas = render_halftone(process_frame, mask)
+            if canvas.shape[:2] != (height, width):
+                canvas = cv2.resize(
+                    canvas, (width, height),
+                    interpolation=cv2.INTER_NEAREST
+                )
+
+            # Display live animation
+            cv2.imshow(WINDOW_NAME, canvas)
+
+            elapsed = time.perf_counter() - last_frame_time
+            wait = max(1, int((delay - elapsed) * 1000))
+            last_frame_time = time.perf_counter()
 
             key = cv2.waitKey(wait) & 0xFF
-
-            if key == 27:
+            if key == 27:  # ESC to close
                 break
-
-            elif key == 32:
-                paused = not paused
-                last_frame_time = time.perf_counter()
-
-            elif key == ord('r'):
-                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
     cap.release()
     stop_audio()
